@@ -1,0 +1,246 @@
+---
+title: "p8157_hw1_jsg2145"
+author: "Jared Garfinkel"
+date: "9/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(viridis)
+library(Hotelling)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	message = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis",
+  scipen = 999
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+```
+
+# Part A
+
+## Problem 1
+
+B is a 2 x 6 matrix of group means. 
+
+### Part a
+
+```{r}
+A = matrix(c(1, -1), ncol = 2, byrow = TRUE)
+A
+
+C = diag(6)
+C
+```
+
+### Part b
+
+```{r}
+A = matrix(c(1, -1), ncol = 2, byrow = TRUE)
+A
+
+C = matrix(c(-1, 0, 0, 0, 0,
+             1, -1, 0, 0, 0,
+             0, 1, -1, 0, 0,
+             0, 0, 1, -1, 0,
+             0, 0, 0, 1, -1,
+             0, 0, 0, 0, 1), ncol = 5, byrow = TRUE)
+C
+```
+
+### Part c
+
+```{r}
+A = matrix(c(-1, 1), ncol = 2, byrow = TRUE)
+A
+
+C = matrix(c(0,0,0,0,1,-1))
+C
+```
+
+
+```{r}
+dat = read.table("./data/TLC.dat") %>% 
+  janitor::clean_names() %>% 
+  rename("id" = v1,
+         "group" = v2,
+         "week0" = v3,
+         "week1" = v4,
+         "week4" = v5,
+         "week6" = v6) %>% 
+  mutate(group = recode(group,
+                        "P" = 0,
+                        "A" = 1))
+```
+
+```{r}
+dat %>% 
+  pivot_longer(cols = week0:week6, names_to = "t", values_to = "mg_dL") %>% 
+  ggplot(aes(x = t, y = mg_dL, group = id)) +
+  geom_path(aes(color = id)) +
+  theme(legend.position = "none")
+```
+
+It appears that those in one group have a response to treatment after the first week, but that the effects begin to wear off by week 6.
+
+```{r}
+dat %>% 
+  pivot_longer(cols = week0:week6, names_to = "t", values_to = "mg_dL") %>% 
+  ggplot(aes(x = t, y = mg_dL, group = id)) +
+  geom_path(aes(color = group)) +
+  theme(legend.position = "none")
+```
+
+
+
+```{r, results = "hide", echo = FALSE}
+test1 = hotelling.test(.~group, data = dat[,-1])
+test1
+```
+
+```{r, results = "hide", echo = FALSE}
+cmat = matrix(c(-1, 1, 0, 0, 0, -1, 1, 0, 0, 0, -1, 1), ncol = 4, byrow = TRUE)
+cmat
+
+data2 = t(dat[,-c(1:2)]) 
+data2
+
+data3 = cmat %*% data2
+data3 = t(data3)
+data3 = cbind(dat[,2], data3) %>% 
+  data.frame()
+data4 = data3 %>% 
+  mutate(across(.cols = c(X2:X4), .fns = as.numeric))
+```
+
+```{r}
+test.contrast = hotelling.test(.~X1, data = data4)
+test.contrast
+```
+
+# Problem 2
+
+```{r}
+df = read.table("./data/ZERBE2.DAT") %>% 
+  janitor::clean_names() %>% 
+  rename("group" = v1,
+         "id" = v2,
+         "t0" = v3,
+         "t0.5" = v4,
+         "t1" = v5,
+         "t1.5" = v6,
+         "t2" = v7,
+         "t3" = v8)
+```
+
+## Part a
+
+Test the means.
+
+```{r}
+test.ph = hotelling.test(.~group, data = df[,-2])
+test.ph
+```
+
+Since the p-value is `r test.ph$pval` we can reject the null. There is evidence of a difference between the means among groups.
+
+## Part b
+
+Test the parellelism.
+
+```{r}
+cmat = matrix(c(-1, 1, 0, 0, 0, 0, 
+                0, -1, 1, 0, 0, 0, 
+                0, 0, -1, 1, 0, 0, 
+                0, 0, 0, -1, 1, 0, 
+                0, 0, 0, 0, -1, 1), ncol = 6, byrow = TRUE)
+cmat
+
+df2 = t(df[,-c(1:2)]) 
+df2
+# 6 x 33
+
+df3 = cmat %*% df2
+df3 = t(df3)
+df3 = cbind(df[,1], df3) %>% 
+  data.frame()
+```
+
+```{r}
+test.contrast2 = hotelling.test(.~X1, data = df3)
+test.contrast2
+```
+
+Since the p-value is `r test.contrast2$pval` we may reject the null indicating that there is a difference in the slopes between time points between groups.
+
+```{r, results = "hide", echo = FALSE}
+cmat3 = matrix(c(1, 0, 0, 0, 0, 
+                 0, 1, 0, 0, 0, 
+                 0, 0, 1, 0, 0,
+                 0, 0, 0, 1, 0,
+                 0, 0, 0, 0, 1,
+                 -1, -1, -1, -1, -1), ncol = 5, byrow = TRUE)
+
+
+
+# unit = matrix(c(1, 1))
+
+df_dat = t(df[,-c(1:2)])
+cmat3 = t(cmat3)
+
+df_dat2 = cmat3 %*% df_dat
+df_dat3 = t(df_dat2)
+df_dat3 = cbind(df[,1], df_dat3) %>% 
+  data.frame()
+
+test.contrast3 = hotelling.test(.~X1, data = df_dat3)
+test.contrast3
+```
+
+## Part c
+
+Test the difference between the last two time points.
+
+```{r}
+df_final = df %>% 
+  select(t2, t3) %>% 
+  t()
+
+cmat_final = matrix(c(1, -1), ncol = 2, byrow = TRUE)
+
+df_final2 = cmat_final %*% df_final %>% 
+  t()
+
+df_final3 = cbind(df[,1], df_final2) %>% 
+  data.frame()
+
+test.contrast3 = hotelling.test(.~X1, data = df_final3)
+test.contrast3
+```
+
+The pvalue is `r test.contrast3$pval`, indicating we do not reject the null, and there is not evidence of a difference in the time points between groups.
+
+## Exploratory Data Analysis
+
+```{r}
+df %>%
+  mutate(group = factor(group, labels = c("control" = 1, "obese" = 2))) %>% 
+  pivot_longer(cols = t0:t3, names_to = "t", values_to = "plasma") %>% 
+  ggplot(aes(x = t, y = plasma, group = id)) +
+  geom_path(aes(color = group)) +
+  scale_color_discrete(labels = c("control", "obese"))
+```
+
+
+
+
