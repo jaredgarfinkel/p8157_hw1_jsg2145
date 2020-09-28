@@ -2,7 +2,7 @@
 title: "p8157_hw1_jsg2145"
 author: "Jared Garfinkel"
 date: "9/25/2020"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
