@@ -68,6 +68,11 @@ C = matrix(c(0,0,0,0,1,-1))
 C
 ```
 
+# Part B
+
+## Problem 1
+
+Exploratory Data Analysis of blood lead levels.
 
 ```{r}
 dat = read.table("./data/TLC.dat") %>% 
@@ -83,7 +88,7 @@ dat = read.table("./data/TLC.dat") %>%
                         "A" = 1))
 ```
 
-```{r}
+```{r, results = "hide"}
 dat %>% 
   pivot_longer(cols = week0:week6, names_to = "t", values_to = "mg_dL") %>% 
   ggplot(aes(x = t, y = mg_dL, group = id)) +
@@ -123,7 +128,7 @@ data4 = data3 %>%
   mutate(across(.cols = c(X2:X4), .fns = as.numeric))
 ```
 
-```{r}
+```{r, results = "hide", echo = FALSE}
 test.contrast = hotelling.test(.~X1, data = data4)
 test.contrast
 ```
@@ -145,20 +150,20 @@ df = read.table("./data/ZERBE2.DAT") %>%
 
 ## Part a
 
-Test the means.
+Test the group means.
 
 ```{r}
 test.ph = hotelling.test(.~group, data = df[,-2])
 test.ph
 ```
 
-Since the p-value is `r test.ph$pval` we can reject the null. There is evidence of a difference between the means among groups.
+Since the p-value is `r test.ph$pval` we can reject the null. There is evidence of a difference of means among groups.
 
 ## Part b
 
 Test the parellelism.
 
-```{r}
+```{r,results="hide"}
 cmat = matrix(c(-1, 1, 0, 0, 0, 0, 
                 0, -1, 1, 0, 0, 0, 
                 0, 0, -1, 1, 0, 0, 
@@ -181,7 +186,7 @@ test.contrast2 = hotelling.test(.~X1, data = df3)
 test.contrast2
 ```
 
-Since the p-value is `r test.contrast2$pval` we may reject the null indicating that there is a difference in the slopes between time points between groups.
+Since the p-value is `r test.contrast2$pval` we may reject the null indicating that there is a difference in the slopes between time points among groups.
 
 ```{r, results = "hide", echo = FALSE}
 cmat3 = matrix(c(1, 0, 0, 0, 0, 
@@ -209,7 +214,7 @@ test.contrast3
 
 ## Part c
 
-Test the difference between the last two time points.
+Test the difference in group means between the last two time points.
 
 ```{r}
 df_final = df %>% 
@@ -228,9 +233,11 @@ test.contrast3 = hotelling.test(.~X1, data = df_final3)
 test.contrast3
 ```
 
-The pvalue is `r test.contrast3$pval`, indicating we do not reject the null, and there is not evidence of a difference in the time points between groups.
+The pvalue is `r test.contrast3$pval`, indicating we do not reject the null, and there is not evidence of a difference in the time points between groups for time t = 2 and time t = 3..
 
 ## Exploratory Data Analysis
+
+Exploratory data analysis does not appear to show much of a difference between groups at first.
 
 ```{r}
 df %>%
@@ -241,6 +248,19 @@ df %>%
   scale_color_discrete(labels = c("control", "obese"))
 ```
 
+In a side-by-side plot, it appears that perhaps both groups decrease in plasma phosphate levels over time. The control group may have more a "U" shape, where the phosphate levels decrease and then increase. On the other hand, it appears to take longer for those in the obese group to reach a valley in the phosphate levels. 
+
+As with the test for parallelism, one may test the slopes between individuals timepoints. Furthermore, it may be of interest to determine at which time point there is a difference in group means.
+
+```{r}
+ df %>%
+  mutate(group = factor(group, labels = c("control" = 1, "obese" = 2))) %>% 
+  pivot_longer(cols = t0:t3, names_to = "t", values_to = "plasma") %>% 
+  ggplot(aes(x = t, y = plasma, group = id)) +
+  geom_path(aes(color = group)) +
+  scale_color_discrete(labels = c("control", "obese")) +
+  facet_grid(.~group)
+```
 
 
 
